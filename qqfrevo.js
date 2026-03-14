@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 const PORT = 5000;
 
-app.use(express.static(path.join(__dirname, "index.html")));
+app.use(express.static(path.join(__dirname, "app.html")));
 
 // Função para parsear estatísticas do Instagram
 function parseDescricao(descricao) {
