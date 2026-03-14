@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>QQfrevo Autonomy Server</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: #0d1117;
+    color: #adff2f;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .center { text-align: center; margin-top: 5vh; }
+
+  .title {
+    font-size: 36px;
+    font-weight: bold;
+    color: #39ff14;
+    margin-bottom: 20px;
+    text-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14, 0 0 20px #39ff14;
+    animation: glow 1.5s infinite alternate;
+  }
+
+  @keyframes glow {
+    from { text-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14; }
+    to { text-shadow: 0 0 20px #39ff14, 0 0 40px #39ff14; }
+  }
+
+  .search-box {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+    background: #161b22;
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid #39ff14;
+    box-shadow: 0 0 15px #39ff14;
+    animation: neon-border 2s infinite alternate;
+  }
+
+  @keyframes neon-border {
+    from { box-shadow: 0 0 10px #39ff14; }
+    to { box-shadow: 0 0 25px #39ff14; }
+  }
+
+  .search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #0d1117;
+    color: #adff2f;
+  }
+
+  .search-box button {
+    background: #39ff14;
+    color: #0d1117;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+    box-shadow: 0 0 10px #39ff14;
+  }
+
+  .search-box button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px #39ff14, 0 0 50px #39ff14;
+  }
+
+  .results {
+    max-width: 1200px;
+    margin: 40px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    padding: 0 20px;
+  }
+
+  .card {
+    background: #161b22;
+    border: 2px solid #39ff14;
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 0 20px #39ff14, 0 0 40px #39ff14;
+  }
+
+  .card a {
+    font-weight: bold;
+    color: #39ff14;
+    text-decoration: none;
+    font-size: 16px;
+    word-break: break-word;
+  }
+
+  .descricao {
+    font-size: 14px;
+    color: #adff2f;
+    margin-top: 10px;
+  }
+
+  .recentes {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .recentes img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #39ff14;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .recentes img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+  }
+
+  .alerta {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #0d1117;
+    border: 1px solid #39ff14;
+    color: #adff2f;
+    font-size: 13px;
+    border-radius: 6px;
+    font-weight: bold;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="center">
+  <div class="title">QQfrevo Autonomy Server</div>
+  <div class="search-box">
+    <input id="tipo" placeholder="Tipo de evento (ex: frevo, baile funk)">
+    <input id="cidade" placeholder="Cidade (ex: Recife)">
+    <button onclick="buscar()">Buscar</button>
+  </div>
+</div>
+
+<div id="resultados" class="results"></div>
+
+<script>
+async function buscar() {
+  const tipo = document.getElementById("tipo").value || "frevo";
+  const cidade = document.getElementById("cidade").value || "";
+  const res = await fetch(`/api/search?tipo=${encodeURIComponent(tipo)}&cidade=${encodeURIComponent(cidade)}`);
+  const data = await res.json();
+
+  const container = document.getElementById("resultados");
+  container.innerHTML = "";
+
+  const hoje = new Date().toLocaleDateString("pt-BR");
+
+  // Mostrar apenas perfis que tenham posts
+  const filtrados = data.filter(r => r.recentes && r.recentes.length > 0);
+
+  if (!filtrados.length) {
+    container.innerHTML = "<p style='text-align:center; color:#8b949e;'>Nenhum perfil válido com posts encontrados.</p>";
+    return;
+  }
+
+  filtrados.forEach(r => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const link = document.createElement("a");
+    link.href = r.url;
+    link.target = "_blank";
+    link.innerText = r.url;
+    card.appendChild(link);
+
+    if (r.descricao) {
+      const desc = document.createElement("div");
+      desc.className = "descricao";
+      desc.innerText = r.descricao;
+      card.appendChild(desc);
+    }
+
+    if (r.recentes.length) {
+      const postsDiv = document.createElement("div");
+      postsDiv.className = "recentes";
+      r.recentes.forEach(imgUrl => {
+        const img = document.createElement("img");
+        img.src = imgUrl;
+        postsDiv.appendChild(img);
+      });
+      card.appendChild(postsDiv);
+    }
+
+    const alerta = document.createElement("div");
+    alerta.className = "alerta";
+    alerta.innerText = `📢 Atualizado hoje (${hoje}) — posts encontrados!`;
+    card.appendChild(alerta);
+
+    container.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>
